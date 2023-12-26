@@ -226,10 +226,16 @@ app.delete("/converations/deleteconversations/:connectionId",async(req,res)=>{
     console.log("coming convo");
     
        //var result =  await Convo.deleteOne({ _id: req.params.connectionId })
-       var result =  await Convo.deleteOne({ "_id": "64ca418ee406fee6902919c2"})
-       .then(res=>{ console.log(res);res.status(200).json("conversation deleted");})
-       .catch(err=>{res.status(500).json("couldn't delete")});
-        console.log(result);
+       var result =  await Convo.deleteOne({ _id: req.params.connectionId});
+
+       if(result!=null){
+           res.status(200).json("conversation deleted");
+       }else{
+           res.status(500).json("couldn't delete")
+        }
+    //    .then(res=>{ console.log(res);res.status(200).json("conversation deleted");})
+    //    .catch(err=>{res.status(500).json("couldn't delete")});
+    //     console.log(result);
         
 })
 
