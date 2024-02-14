@@ -23,13 +23,13 @@ io.on('connection', (socket) => {
    
     socket.on("join",(data)=>{
         socket.join(data.room);
-        console.log("user= "+data.user + ", room= "+data.room );
+        //console.log("user= "+data.user + ", room= "+data.room );
        socket.broadcast.to(data.room).emit("new user joined" , {user:data.user,message:"user joined"})
     })
 
     socket.on("message",(data)=>{
         socket.join(data.room);
-        console.log("user= "+data.user + ", room= "+data.room );
+       // console.log("user= "+data.user + ", room= "+data.room );
        io.in(data.room).emit("new message" , {user:data.user,message:data.message})
     })
     
@@ -42,42 +42,44 @@ const {email, name , password} = req.body;
         const checkusers =await users.find({
             email : {$in :[email]}
         })
-        console.log(checkusers);
+       // console.log(checkusers);
       if(checkusers[0]==null){ 
 
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
         const newuser = new users({email,name,password:passwordHash})
         const result =await newuser.save();
-        res.status(200).json("1") 
+        return res.status(200).json("1") 
+       }else{
+        return res.status(200).json("2")
        }
        
     }catch(err){
-       res.status(400).json(err);
+       return res.status(400).json(err);
     }
 })
 
 app.post("/users/checkuser", async(req,res)=>{ 
-    const {email,password} = req.body;
+    const {email,password,checkpass} = req.body;
     
     
     try{
     
     const user = await users.findOne({email:email})
     if(!user){
-        res.status(200).json("User Not Found")
+        return res.status(200).json("User Not Found")
     }else{
         const validpassword = await bcrypt.compare(password , user.password);
-        if(!validpassword){
-            res.status(200).json("wrong password")
+        if((checkpass=='true') && !validpassword){
+            return res.status(200).json("wrong password")
         }else{
 
-            res.status(200).json(user)
+            return res.status(200).json(user)
             
         }     
     } 
 }catch(err){
-       res.status(400).json(err);
+       return res.status(400).json(err);
     }
 })
 
@@ -85,13 +87,13 @@ app.get("/users/getUserToAdd/:username", async(req,res)=>{
     try{
     const user = await users.findOne({name:req.params.username})
     if(!user){
-        res.status(200).json("-1")
+        return res.status(200).json("-1")
     }else{
-        console.log(user);
-         res.status(200).json(user)  
+       // console.log(user);
+         return res.status(200).json(user)  
     }     
 }catch(err){
-       res.status(400).json(err);
+       return res.status(400).json(err);
     }
 })
 
@@ -99,13 +101,13 @@ app.get("/users/getUserToAdd/:username", async(req,res)=>{
 //     try{
 //     const user = await users.findOne({name:req.params.username})
 //     if(!user){
-//         res.status(200).json("-1")
+//         return res.status(200).json("-1")
 //     }else{
 //         console.log(user);
-//          res.status(200).json(user)  
+//          return res.status(200).json(user)  
 //     }     
 // }catch(err){
-//        res.status(400).json(err);
+//        return res.status(400).json(err);
 //     }
 // })
 
@@ -116,44 +118,46 @@ app.get("/users/:UserId",async (req,res)=>{
         const conversation =await Convo.find({
             users : {$in: [req.params.UserId ]}
         });
-        
+       // console.log(conversation+" all convo");
         if(conversation!=[]){
            
              for(let convId of conversation){
                 
                 const user1 = convId.users[0];
                 const user2 = convId.users[1];
+                if(user1!==undefined && user2!==undefined){
 
-            //     if(user1==null){
-            //         console.log("user1");
-            //     }
-            //     if(user2==null){
-            //          console.log(user");
-            //    }
+
                 if(user1!=req.params.UserId){
                     const user = await users.findOne({_id:user1})
+
+                   // console.log(user.name+" user to add");
                     if(user==null){
-                        console.log("null user1"+user1);
+                        //console.log("null user1"+user1);
                      }
                   friends[user.name] = convId._id;
                 }else{
 
                  const user = await users.findOne({_id:user2})
                  if(user==null){
-                    console.log("null user2"+user2);
+                   //console.log("null user2"+user2);
                  }
                   friends[user.name] = convId._id;
                 }
-                console.log(friends);
+                //console.log(friends + "all friends");
+             }else{
+                return res.status(200).json("something went wrong!");
              }
-            // console.log(friends);
-             res.status(200).json(friends); 
+           
+            }
+           // console.log(JSON.stringify(friends)+" all friends");
+            return res.status(200).json(friends); 
         }else{
-            res.status(200).json([]); 
+            return res.status(200).json([]); 
         }
-        
+    
     }catch(err){
-       res.status(400).json(err);
+      return res.status(400).json(err);
     }
 })
 
@@ -186,13 +190,13 @@ app.get("/users/:UserId",async (req,res)=>{
 //                 }
 //              }
 //              //console.log(friends);
-//              res.status(200).json(friends); 
+//              return res.status(200).json(friends); 
 //         }else{
-//             res.status(200).json([]); 
+//             return res.status(200).json([]); 
 //         }
         
 //     }catch(err){
-//        res.status(400).json(err);
+//        return res.status(400).json(err);
 //     }
 // })
 
@@ -201,21 +205,22 @@ app.post("/converations/storeconversations",async(req,res)=>{
      
     console.log("coming convo");
 
+
     const conv =await Convo.findOne({
         users: {$all:[req.body.users[0],req.body.users[1]]}
     });
     
    if(conv!=null){
     console.log(conv +" already");
-    res.status(200).json("Already Added"); 
+    return res.status(200).json("Already Added"); 
    }else{
         const newconvo  = new Convo({users : req.body.users});
         
         try{
             const data =await newconvo.save();
-            res.status(200).json("new conversation saved"); 
+            return res.status(200).json("new conversation saved"); 
         }catch(err){
-        res.status(400).json(err);
+        return res.status(400).json(err);
         }
    }
 
@@ -229,12 +234,12 @@ app.delete("/converations/deleteconversations/:connectionId",async(req,res)=>{
        var result =  await Convo.deleteOne({ _id: req.params.connectionId});
 
        if(result!=null){
-           res.status(200).json("conversation deleted");
+           return res.status(200).json("conversation deleted");
        }else{
-           res.status(500).json("couldn't delete")
+           return res.status(500).json("couldn't delete")
         }
-    //    .then(res=>{ console.log(res);res.status(200).json("conversation deleted");})
-    //    .catch(err=>{res.status(500).json("couldn't delete")});
+    //    .then(res=>{ console.log(res);return res.status(200).json("conversation deleted");})
+    //    .catch(err=>{return res.status(500).json("couldn't delete")});
     //     console.log(result);
         
 })
@@ -252,9 +257,9 @@ app.post("/messages/savemessages",async (req,res)=>{
 
         try{
             const data =await message.save();
-            res.status(200).json(data); 
+            return res.status(200).json(data); 
         }catch(err){
-           res.status(400).json(err);
+           return res.status(400).json(err);
         }
     }else{
         for(let message of messages){
@@ -275,9 +280,9 @@ app.get("/messages/getmessages/:conversationId",async (req,res)=>{
             conversationId: {$in:[req.params.conversationId]}
         });
         console.log(messages);
-        res.status(200).json(messages); 
+        return res.status(200).json(messages); 
     }catch(err){
-    res.status(400).json(err);
+    return res.status(400).json(err);
     }
 })
 
@@ -318,13 +323,13 @@ app.post("/upload/uploadimages",upload.single("image"),async (req,res)=>{
         }); 
       console.log(req.file);
       await image.save();
-      res.status(200).json("image saved");
+      return res.status(200).json("image saved");
     }
 
  })
 
  app.get("/getimage/:UserId",async (req,res)=>{
-    imagemodel.findOne({userid:req.params.UserId}).then(data=>{res.status(200).json(data); console.log();}).catch(err=>{console.log(err); res.status(500).json(err)})
+    imagemodel.findOne({userid:req.params.UserId}).then(data=>{return res.status(200).json(data); console.log();}).catch(err=>{console.log(err); return res.status(500).json(err)})
  })
 
 
