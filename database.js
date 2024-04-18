@@ -27,14 +27,10 @@ const conversationmodel = new mongoose.Schema({
 const messagesnmodel = new mongoose.Schema({
     
     conversationId : {type:String},
-    from:{
-        type:String 
-    },
-    to:{
-        type:String
-    },
     messages :[{
-        type:String 
+        from:String,
+        message:String,
+        dateandtime:String
     }]
 },{timestamps :true})
 

@@ -27,13 +27,15 @@ io.on('connection', (socket) => {
        socket.broadcast.to(data.room).emit("new user joined" , {user:data.user,message:"user joined"})
     })
 
-    socket.on("message",(data)=>{
+   socket.on("message",async (data)=>{
         socket.join(data.room);
        // console.log("user= "+data.user + ", room= "+data.room );
-       io.in(data.room).emit("new message" , {user:data.user,message:data.message})
+       io.in(data.room).emit("new message" , {user:data.user,message:data.message,date:data.date})
+
     })
     
 });
+
 
 app.post("/users/saveusers", async(req,res)=>{ 
 const {email, name , password} = req.body;
@@ -218,9 +220,16 @@ app.post("/converations/storeconversations",async(req,res)=>{
         
         try{
             const data =await newconvo.save();
+
+            const newmessagesdata  = new messagemodel(
+                {
+                    conversationId : data._id,
+                    messages:[]
+                });
+               await newmessagesdata.save();
             return res.status(200).json("new conversation saved"); 
         }catch(err){
-        return res.status(400).json(err);
+           return res.status(400).json(err);
         }
    }
 
@@ -247,29 +256,29 @@ app.delete("/converations/deleteconversations/:connectionId",async(req,res)=>{
 
 
 app.post("/messages/savemessages",async (req,res)=>{
-      
-    console.log("line 159");
-    const messages = await messagemodel.find({conversationId:req.body.conversationId});
-    
-    if(!messages){
-        console.log("line 163");
-        const message = new messagemodel(req.body); 
-
-        try{
-            const data =await message.save();
-            return res.status(200).json(data); 
-        }catch(err){
-           return res.status(400).json(err);
+    const updatemessags = await messagemodel.findOneAndUpdate({conversationId:req.body.connid},{$push:{
+        messages:{
+            from:req.body.from,
+            message:req.body.message,
+            dateandtime:req.body.date
         }
-    }else{
-        for(let message of messages){
-            console.log("line 174");
-            if(message.from == req.body.from){
-                await messagemodel.updateOne({from:req.body.from},{  $push: {"messages":req.body.message}});
-            }
-        }
+    }})     
+    if(updatemessags){
+        console.log("message updated");
     }
-    
+
+    return res.status(200).json("message updated");
+})
+
+app.post("/messages/clearchatmessages",async (req,res)=>{
+    const updatemessags = await messagemodel.findOneAndUpdate({conversationId:req.body.connid},{$pull:{
+        messages:{}
+    }})     
+    if(updatemessags){
+        console.log("chat cleared");
+    }
+
+    return res.status(200).json("chat cleared");
 })
 
 
@@ -290,19 +299,6 @@ app.post("/upload/uploadimages",upload.single("image"),async (req,res)=>{
     console.log(req.body.userId+" getting id");  
     
 
-
-    // const img =await imagemodel.replaceOne(
-    //     { userid: req.body.userId },
-    //     {
-    //                 userid:req.body.userId,
-    //                 name:req.file.originalname,
-    //                 image:{
-    //                     data:req.file.buffer,
-    //                     contentType:req.file.mimetype
-    //                 }
-    //     }
-    //  );
-    //  console.log(img);
     const img =await imagemodel.find({userid:req.body.userId});
     console.log(img);
     if(img[0]!=null){
