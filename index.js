@@ -30,7 +30,7 @@ io.on('connection', (socket) => {
    socket.on("message",async (data)=>{
         socket.join(data.room);
        // console.log("user= "+data.user + ", room= "+data.room );
-       io.in(data.room).emit("new message" , {user:data.user,message:data.message,date:data.date})
+       io.in(data.room).emit("new message" , {user:data.user,message:data.message,date:data.date,room:data.room})
 
     })
     
