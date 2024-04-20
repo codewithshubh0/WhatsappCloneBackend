@@ -3,7 +3,7 @@ const app = express();
 require("dotenv").config();
 const cors =require("cors");
 const port = process.env.port || 8000;
-const {users,Convo, messagemodel,imagemodel} = require("./database")
+const {users,Convo, messagemodel,imagemodel,allonlineusers} = require("./database")
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
@@ -20,11 +20,20 @@ const upload = multer({storage:storage});
  
 io.on('connection', (socket) => {
     io.emit("welcome","hello bhai"+socket.id );
-   
-    socket.on("join",(data)=>{
+
+    socket.on("disconnect",async () => 
+    {
+        console.log("Connection Lost")
+        io.in().emit('user left', {msg: "user left"});
+    }
+);
+
+    socket.on("joinning",async (data)=>{
+        console.log(data.msg+" on login "+ data.username);
+
         socket.join(data.room);
         //console.log("user= "+data.user + ", room= "+data.room );
-       socket.broadcast.to(data.room).emit("new user joined" , {user:data.user,message:"user joined"})
+       io.in(data.room).emit("new user joined" , {user:data.username,message:"user joined"})
     })
 
    socket.on("message",async (data)=>{
@@ -33,10 +42,70 @@ io.on('connection', (socket) => {
        io.in(data.room).emit("new message" , {user:data.user,message:data.message,date:data.date,room:data.room})
 
     })
-    
+
+
+     socket.on("disconnected",async (data)=>{
+        console.log(data.msg+" left "+ data.username);
+        socket.join(data.room);
+       // console.log("user= "+data.user + ", room= "+data.room );
+       io.in(data.room).emit("user left" , {user:data.username,message:data.message})
+
+    })
 });
 
+app.post("/users/getonlineusers",async(req,res)=>{ 
+    const allonlineusersarray = await allonlineusers.find({'onlineusers':req.body.user})
+    if(allonlineusersarray[0]==null){
+        console.log("not found");
+        return res.status(200).json('offline')
+    }else{
+        console.log(allonlineusersarray);
+         return res.status(200).json('online')  
+    }     
+  
+})
 
+app.post("/users/getlastmsg",async(req,res)=>{ 
+    const data = await messagemodel.findOne({conversationId:req.body.connid},{'messages':{$slice: -1}})
+    if(data==null){
+        console.log("not found");
+        return res.status(200).json('not found')
+    }else{
+        console.log(data.messages);
+         return res.status(200).json(data.messages)  
+    }     
+  
+})
+
+app.post("/users/storeonlineusers",async(req,res)=>{ 
+    const addonlineusersarray = await allonlineusers.findOneAndUpdate({_id:'6623689f1b5444c3ba1d2f8e'},{$push:{
+        'onlineusers':req.body.user
+    }
+    })
+    if(!addonlineusersarray){
+        return res.status(200).json("not added")
+    }else{
+       // console.log(user);
+         return res.status(200).json("added")  
+    }     
+  
+})
+
+app.post("/users/removeonlineusers",async(req,res)=>{ 
+ 
+
+    const removeonlineusersarray = await allonlineusers.findOneAndUpdate({_id:'6623689f1b5444c3ba1d2f8e'},{$pull:{
+        'onlineusers':req.body.user
+    }
+    })
+    if(!removeonlineusersarray){
+        return res.status(200).json("not added")
+    }else{
+       // console.log(user);
+         return res.status(200).json("added")  
+    }     
+  
+})
 app.post("/users/saveusers", async(req,res)=>{ 
 const {email, name , password} = req.body;
     

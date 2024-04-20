@@ -46,8 +46,14 @@ const imageSchema = new mongoose.Schema({
     }
 },{timestamps :true})
 
+const allonlineuser = new mongoose.Schema({
+    onlineusers:[String]
+},{timestamps :true})
+
+
 const users =new mongoose.model("users",Users);
 const Convo =new mongoose.model("conversations",conversationmodel);
 const messagemodel =new mongoose.model("messages",messagesnmodel);
 const imagemodel =new mongoose.model("profileimages",imageSchema);
-module.exports = {users , Convo ,messagemodel,imagemodel}
+const allonlineusers =new mongoose.model("allonlineusers",allonlineuser);
+module.exports = {users , Convo ,messagemodel,imagemodel,allonlineusers}
