@@ -80,23 +80,17 @@ app.post("/users/getlastmsg",async(req,res)=>{
 app.post("/users/storeonlineusers",async(req,res)=>{ 
 
 
-    const allonlineusersarray = await allonlineusers.find({'onlineusers':req.body.user})
-    if(allonlineusersarray[0]==null){
-        const addonlineusersarray = await allonlineusers.findOneAndUpdate({_id:'6623689f1b5444c3ba1d2f8e'},{$push:{
-            'onlineusers':req.body.user
-        }
-        })
-        if(!addonlineusersarray){
-            return res.status(200).json("not added")
-        }else{
-           // console.log(user);
-             return res.status(200).json("added")  
-        } 
+    
+    const addonlineusersarray = await allonlineusers.findOneAndUpdate({_id:'6623689f1b5444c3ba1d2f8e'},{$push:{
+        'onlineusers':req.body.user
+    }
+    })
+    if(!addonlineusersarray){
+        return res.status(200).json("not added")
     }else{
-        console.log(allonlineusersarray);
-         return res.status(200).json("already online")  
-    }    
-       
+       // console.log(user);
+         return res.status(200).json("added")  
+    }     
   
 })
 
